@@ -3,6 +3,8 @@ Ractive.defaults.allowExpressions = false;
 
 let app;
 
+DarkReader.auto();
+
 const DOWNLOAD_PROGRESS_INTERVAL = 500;
 const URL_SUBSTRING_LENGTH = 70;
 const ACTIVE_DOWNLOADS = "activeDownloads";
@@ -18,14 +20,12 @@ const downloadStates = {
   CANCELED,
 };
 
-const measures = [
-  "bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"
-];
+const measures = ["bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
 
 const SECOND_INT = 1;
 const MINUTE_INT = SECOND_INT * 60;
-const HOUR_INT   = MINUTE_INT * 60;
-const DAY_INT    = HOUR_INT * 60;
+const HOUR_INT = MINUTE_INT * 60;
+const DAY_INT = HOUR_INT * 60;
 
 const SPEED_KILOBYTE = 1024;
 const SPEED_MEGABYTE = SPEED_KILOBYTE * 1024;
@@ -52,9 +52,9 @@ const autobindMethods = [
 ];
 
 fetchFileContentsAsText("template-item.html")
-  .then((text) => Ractive.partials.item = text)
+  .then((text) => (Ractive.partials.item = text))
   .then(() => fetchFileContentsAsText("template-main.html"))
-  .then((text) => Ractive.partials.main = text)
+  .then((text) => (Ractive.partials.main = text))
   .then(start);
 
 function start() {
@@ -72,9 +72,7 @@ function start() {
     },
 
     onconfig() {
-      autobindMethods.forEach(
-        (name) => this[name] = this[name].bind(this)
-      );
+      autobindMethods.forEach((name) => (this[name] = this[name].bind(this)));
 
       browser.downloads.onCreated.addListener(this.addItem);
       browser.downloads.onChanged.addListener(this.onChanged);
@@ -119,15 +117,12 @@ function start() {
       const activeDownloads = this.get(ACTIVE_DOWNLOADS);
 
       if (activeDownloads.indexOf(itemId) === -1) {
-        this.getDownloadById(itemId)
-          .then((item) => {
-              if (item) {
-                this.push(ACTIVE_DOWNLOADS, itemId);
-                this.checkActiveDownloads();
-              }
-            },
-            this.onError
-          );
+        this.getDownloadById(itemId).then((item) => {
+          if (item) {
+            this.push(ACTIVE_DOWNLOADS, itemId);
+            this.checkActiveDownloads();
+          }
+        }, this.onError);
       }
     },
 
@@ -136,8 +131,9 @@ function start() {
       const index = activeDownloads.indexOf(itemId);
 
       if (index > -1) {
-        this.splice(ACTIVE_DOWNLOADS, index, 1)
-          .then(() => this.updateDownloadItem(itemId));
+        this.splice(ACTIVE_DOWNLOADS, index, 1).then(() =>
+          this.updateDownloadItem(itemId)
+        );
       }
     },
 
@@ -164,9 +160,7 @@ function start() {
     updateActiveDownloads() {
       const activeDownloads = this.get(ACTIVE_DOWNLOADS);
 
-      Promise.all(
-        activeDownloads.map(this.getDownloadById)
-      ).then((items) => {
+      Promise.all(activeDownloads.map(this.getDownloadById)).then((items) => {
         items.forEach(this.updateDownloadItem);
       });
     },
@@ -222,11 +216,12 @@ function start() {
       const itemIndex = this.getItemIndexById(item.id);
       const keypath = `items.${itemIndex}.iconUrl`;
 
-      return browser.downloads.getFileIcon(item.id)
+      return browser.downloads
+        .getFileIcon(item.id)
         .then((iconUrl) => this.set(keypath, iconUrl));
     },
 
-    search(query){
+    search(query) {
       return browser.downloads.search(query);
     },
 
@@ -248,7 +243,7 @@ function start() {
     },
 
     getDownloadById(itemId) {
-      return this.search({id: itemId}).then((items) => {
+      return this.search({ id: itemId }).then((items) => {
         if (items.length) {
           return items.pop();
         }
@@ -283,7 +278,10 @@ function start() {
     },
 
     getFilename(path) {
-      return path.replace(/\\+/g, "/").split("/").pop();
+      return path
+        .replace(/\\+/g, "/")
+        .split("/")
+        .pop();
     },
 
     openItem(event) {
@@ -311,25 +309,19 @@ function start() {
     },
 
     pauseDownload(itemId) {
-      browser.downloads.pause(itemId)
-        .then(
-          () => this.removeFromActiveDownloads(itemId),
-          this.onError
-        );
+      browser.downloads
+        .pause(itemId)
+        .then(() => this.removeFromActiveDownloads(itemId), this.onError);
     },
 
     resumeDownload(itemId) {
       this.addToActiveDownloads(itemId);
 
-      browser.downloads.resume(itemId)
-        .then(null, this.onError);
+      browser.downloads.resume(itemId).then(null, this.onError);
     },
 
     retryDownload(item) {
-      return this.eraseItem(
-        item.id,
-        () => this.download(item)
-      );
+      return this.eraseItem(item.id, () => this.download(item));
     },
 
     download(item) {
@@ -338,25 +330,21 @@ function start() {
         filename: item.fileName,
       };
 
-      browser.downloads.download(itemData)
-        .then(
-          (itemId) => this.addToActiveDownloads(itemId),
-          this.onError
-        );
+      browser.downloads
+        .download(itemData)
+        .then((itemId) => this.addToActiveDownloads(itemId), this.onError);
     },
 
     cancelDownload(event) {
       const item = event.get();
 
-      browser.downloads.cancel(item.id)
-        .then(
-          () => this.removeFromActiveDownloads(item.id),
-          this.onError
-        );
+      browser.downloads
+        .cancel(item.id)
+        .then(() => this.removeFromActiveDownloads(item.id), this.onError);
 
-        //doesn't actually add it to active downloads, but it fixes the cancel while paused bug
-        this.addToActiveDownloads(item.id);
-        this.updateDownloadItem(item);
+      //doesn't actually add it to active downloads, but it fixes the cancel while paused bug
+      this.addToActiveDownloads(item.id);
+      this.updateDownloadItem(item);
     },
 
     eraseDownload(event) {
@@ -368,8 +356,7 @@ function start() {
     eraseItem(itemId, callback = null) {
       this.removeFromActiveDownloads(itemId);
 
-      browser.downloads.erase({ id: itemId })
-        .then(callback, this.onError);
+      browser.downloads.erase({ id: itemId }).then(callback, this.onError);
     },
 
     addItem(data) {
@@ -395,18 +382,12 @@ function start() {
     },
 
     calculateDownloadState(item) {
-      const {
-        PAUSED,
-        FAILED,
-        CANCELED,
-        COMPLETE,
-        IN_PROGRESS,
-      } = this.states;
+      const { PAUSED, FAILED, CANCELED, COMPLETE, IN_PROGRESS } = this.states;
 
       const errored = !!this.interrupts[item.error];
       const resumable = item.paused && item.canResume;
-      const canceled = (item.error === this.interrupts.USER_CANCELED);
-      const complete = (item.state === COMPLETE);
+      const canceled = item.error === this.interrupts.USER_CANCELED;
+      const complete = item.state === COMPLETE;
 
       if (errored) {
         if (canceled) {
@@ -423,7 +404,7 @@ function start() {
       if (complete) {
         return COMPLETE;
       }
-      
+
       return this.states.IN_PROGRESS;
     },
 
@@ -447,26 +428,24 @@ function start() {
       }
 
       if (typeof item === "number") {
-        return this.getDownloadById(item)
-          .then(this.updateDownloadItem);
+        return this.getDownloadById(item).then(this.updateDownloadItem);
       }
 
       const { IN_PROGRESS, COMPLETE } = this.states;
 
       const itemIndex = this.getItemIndexById(item.id);
       const keypath = `items.${itemIndex}`;
-      const oldItem = (this.get(keypath) || {});
+      const oldItem = this.get(keypath) || {};
 
       const downloadState = this.calculateDownloadState(item);
       const stateButtonText = this.getStateButtonText(downloadState);
-      const ratio = (item.bytesReceived / item.totalBytes);
-      const downloadInProgress = (
-        downloadState === PAUSED || downloadState === IN_PROGRESS
-      );
+      const ratio = item.bytesReceived / item.totalBytes;
+      const downloadInProgress =
+        downloadState === PAUSED || downloadState === IN_PROGRESS;
       const folderClass = this.getFolderClass(downloadState);
       const remainingTime = this.getRemainingTimeString(item);
       const currentSpeed = this.getCurrentSpeed(item);
-      
+
       let size = oldItem.size;
       let percentage = oldItem.percentage;
 
@@ -476,7 +455,7 @@ function start() {
 
         const totalBytes = this.getNumber(item.totalBytes);
         const totalSize = this.getFileSizeString(item.totalBytes);
-        
+
         if (downloadInProgress && totalBytes) {
           size = `${size} of ${totalSize}`;
         }
@@ -490,7 +469,7 @@ function start() {
       this.set(`${keypath}.folderClass`, folderClass);
       this.set(`${keypath}.remainingTime`, remainingTime);
       this.set(`${keypath}.currentSpeed`, currentSpeed);
-      
+
       if (downloadInProgress) {
         const dateTime = this.getDateTime(item);
         this.set(`${keypath}.dateTime`, dateTime);
@@ -507,15 +486,15 @@ function start() {
       const { IN_PROGRESS, PAUSED } = this.states;
       const items = this.get(ITEMS);
 
-      return items.filter(function (item) {
+      return items.filter(function(item) {
         const state = item.downloadState;
-        return (state !== IN_PROGRESS) && (state !== PAUSED);
+        return state !== IN_PROGRESS && state !== PAUSED;
       });
     },
 
     clearDownloads() {
       const eraseInactiveItems = this.getInactiveItems()
-        .map(item => item.id)
+        .map((item) => item.id)
         .map(this.eraseItem);
 
       return Promise.all(eraseInactiveItems);
@@ -543,7 +522,7 @@ function start() {
       if (url.length < URL_SUBSTRING_LENGTH) {
         return url;
       }
-      return url.substring(0,URL_SUBSTRING_LENGTH) + "...";
+      return url.substring(0, URL_SUBSTRING_LENGTH) + "...";
     },
 
     getCurrentSpeed(item) {
@@ -559,8 +538,8 @@ function start() {
 
       const remainingSeconds = this.getRemainingSeconds(item);
 
-      if (isNaN(remainingSeconds)){
-        return "Calculating"
+      if (isNaN(remainingSeconds)) {
+        return "Calculating";
       } else if (remainingSeconds === 0) {
         return "Finishing";
       }
@@ -586,9 +565,11 @@ function start() {
     getRemainingTimeString(item) {
       const { PAUSED, COMPLETE, FAILED } = this.states;
       const downloadState = this.calculateDownloadState(item);
-      if (downloadState === PAUSED   ||
-          downloadState === COMPLETE ||
-          downloadState === FAILED) {
+      if (
+        downloadState === PAUSED ||
+        downloadState === COMPLETE ||
+        downloadState === FAILED
+      ) {
         return "";
       }
 
@@ -602,7 +583,7 @@ function start() {
       }
 
       let timeUnit = 0;
-      let suffix = '';
+      let suffix = "";
 
       if (remainingSeconds > HOUR_INT) {
         timeUnit = HOUR_INT;
@@ -610,8 +591,7 @@ function start() {
       } else if (remainingSeconds > MINUTE_INT) {
         timeUnit = MINUTE_INT;
         suffix = "m remaining";
-      } else
-      {
+      } else {
         timeUnit = SECOND_INT;
         suffix = "s remaining";
       }
@@ -626,11 +606,12 @@ function start() {
     getRemainingSeconds(item) {
       const endDate = new Date(item.estimatedEndTime);
       const currentDate = new Date();
-      return this.getDifferenceInSeconds(currentDate,endDate);
+      return this.getDifferenceInSeconds(currentDate, endDate);
     },
 
     getDifferenceInSeconds(startDate, endDate) {
-      const differenceSeconds = (endDate.getTime() - startDate.getTime()) / 1000;
+      const differenceSeconds =
+        (endDate.getTime() - startDate.getTime()) / 1000;
       return Math.round(differenceSeconds);
     },
   });
